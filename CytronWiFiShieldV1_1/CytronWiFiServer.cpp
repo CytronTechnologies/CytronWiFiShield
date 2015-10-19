@@ -65,9 +65,9 @@ ESP8266Client ESP8266Server::available()
       if(p) 
       {
         uint8_t socket = *(p+5)-48;
-//#ifdef DEBUG
+#ifdef DEBUG
 		DEBUG_OUTPUT.println(socket);
-//#endif
+#endif
 		return ESP8266Client(socket);
       }
 	}

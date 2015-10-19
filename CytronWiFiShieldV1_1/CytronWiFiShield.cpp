@@ -21,6 +21,7 @@ Distributed as-is; no warranty is given.
 ******************************************************************************/
 
 #include "CytronWiFiShield.h"
+#include "util/ESP8266_AT.h"
 
 #define ESP8266_DISABLE_ECHO 0
 #define SERVER_TIMEOUT 10
@@ -42,7 +43,7 @@ ESP8266Class::ESP8266Class()
 
 bool ESP8266Class::begin(uint8_t rx_pin, uint8_t tx_pin)
 {
-	if (rx_pin==2&&tx_pin==3 || rx_pin==8&&tx_pin==9)
+	if ((rx_pin==2||rx_pin==8||rx_pin==10||rx_pin==12)&&(tx_pin==3||tx_pin==9||tx_pin==11||tx_pin==13))
 	{
 		SoftwareSerial *swSerial = new SoftwareSerial(rx_pin, tx_pin);
 		swSerial->begin(baudRate);
@@ -56,6 +57,9 @@ bool ESP8266Class::begin(uint8_t rx_pin, uint8_t tx_pin)
 		_serial = &Serial;
 		isHardwareSerial = true;
 	}
+	
+	else
+		return false;
 	
 	if (reset()&&test())
 	{
@@ -147,12 +151,30 @@ String ESP8266Class::firmwareVersion()
 	// (~101 characters)
 	// Look for "OK":
 
-	if (readForResponse(RESPONSE_OK, COMMAND_RESPONSE_TIMEOUT) > 0)
+	//if (readForResponse(RESPONSE_OK, COMMAND_RESPONSE_TIMEOUT) > 0)
+	//{
+	//	String version = (const char*)esp8266RxBuffer;
+	//	version.replace("\r\n\r\n","\r\n");
+	//	version.replace("\r\nOK\r\n","");
+	//	return version;
+	//}
+	String version = "";
+	//unsigned long timeIn = millis();
+	unsigned int timeout = COMMAND_RESPONSE_TIMEOUT;
+	while (timeout--) // While we haven't timed out
 	{
-		String version = (const char*)esp8266RxBuffer;
-		version.replace("\r\n\r\n","\r\n");
-		version.replace("\r\nOK\r\n","");
-		return version;
+		if (_serial->available()) // If data is available on UART RX
+		{
+			version += (char)_serial->read();
+			
+			if(strstr(version.c_str(), RESPONSE_OK))	// Search the buffer for goodRsp
+			{
+				version.replace("\r\n\r\n","\r\n");
+				version.replace("\r\nOK\r\n","");
+				return version;
+			}	// Return how number of chars read				
+		}
+		delay(1);
 	}
 	return "";
 }
@@ -500,6 +522,7 @@ bool ESP8266Class::tcpConnect(uint8_t linkID, const char * destination, uint16_t
 	// Return true on successful (new) connection
 	else 
 		return true;
+	delay(1);
 	}
 	return false;
 }
@@ -539,7 +562,7 @@ bool ESP8266Class::close(uint8_t linkID)
 	sendCommand(ESP8266_TCP_CLOSE, ESP8266_CMD_SETUP, params);
 	
 	int16_t rsp = readForResponses(RESPONSE_OK, RESPONSE_ERROR, COMMAND_RESPONSE_TIMEOUT);
-	Serial.println(esp8266RxBuffer);
+	//Serial.println(esp8266RxBuffer);
 	if (rsp <= 0)
 	{
 		// We may see "ERROR", but be "UNLINK".
@@ -691,10 +714,10 @@ int ESP8266Class::peek()
 
 void ESP8266Class::flush()
 {
-	if(!isHardwareSerial)
+	//if(!isHardwareSerial)
 		_serial->readString();
-	else
-		_serial->flush();
+	//else
+	//	_serial->flush();
 }
 
 //////////////////////////////////////////////////
@@ -720,12 +743,12 @@ void ESP8266Class::sendCommand(const char * cmd, uint8_t type, const char * para
 
 int16_t ESP8266Class::readForResponse(const char * rsp, unsigned int timeout)
 {
-	unsigned long timeIn = millis();	// Timestamp coming into function
+	//unsigned long timeIn = millis();	// Timestamp coming into function
 	unsigned int received = 0; // received keeps track of number of chars read
 	
 	clearBuffer();
 	
-	while (timeIn + timeout > millis()) // While we haven't timed out
+	while (timeout--) // While we haven't timed out
 	{
 		if (_serial->available()) // If data is available on UART RX
 		{
@@ -735,6 +758,7 @@ int16_t ESP8266Class::readForResponse(const char * rsp, unsigned int timeout)
 				return received;	// Return how number of chars read
 				
 		}
+		delay(1);
 	}
 	
 	if (received > 0) // If we received any characters
@@ -745,12 +769,12 @@ int16_t ESP8266Class::readForResponse(const char * rsp, unsigned int timeout)
 
 int16_t ESP8266Class::readForResponses(const char * pass, const char * fail, unsigned int timeout)
 {
-	unsigned long timeIn = millis();	// Timestamp coming into function
+	//unsigned long timeIn = millis();	// Timestamp coming into function
 	unsigned int received = 0; // received keeps track of number of chars read
 	
 	clearBuffer();
 	
-	while (timeIn + timeout > millis()) // While we haven't timed out
+	while (timeout--) // While we haven't timed out
 	{
 		if (_serial->available()) // If data is available on UART RX
 		{
@@ -763,6 +787,7 @@ int16_t ESP8266Class::readForResponses(const char * pass, const char * fail, uns
 				return ESP8266_RSP_FAIL;// return error
 				
 		}
+		delay(1);
 	}
 	
 	if (received > 0) // If we received any characters
@@ -784,10 +809,10 @@ void ESP8266Class::clearBuffer()
 unsigned int ESP8266Class::readByteToBuffer()
 {
 	// Read the data in
-	char c = _serial->read();
+	//char c = _serial->read();
 	
 	// Store the data in the buffer
-	esp8266RxBuffer[bufferHead] = c;
+	esp8266RxBuffer[bufferHead] = (char)_serial->read();
 	//! TODO: Don't care if we overflow. Should we? Set a flag or something?
 	bufferHead = (bufferHead + 1) % ESP8266_RX_BUFFER_LEN;
 	

@@ -26,8 +26,8 @@ Distributed as-is; no warranty is given.
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 #include <IPAddress.h>
-#include "CytronWiFiClient.h"
-#include "CytronWiFiServer.h"
+//#include "CytronWiFiClient.h"
+//#include "CytronWiFiServer.h"
 
 ///////////////////////////////
 // Command Response Timeouts //
@@ -36,7 +36,7 @@ Distributed as-is; no warranty is given.
 #define COMMAND_PING_TIMEOUT 3000
 #define WIFI_CONNECT_TIMEOUT 30000
 #define COMMAND_RESET_TIMEOUT 5000
-#define CLIENT_CONNECT_TIMEOUT 5000
+#define CLIENT_CONNECT_TIMEOUT 10000
 
 #define ESP8266_MAX_SOCK_NUM 5
 #define ESP8266_SOCK_NOT_AVAIL 255
