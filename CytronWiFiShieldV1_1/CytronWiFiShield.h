@@ -112,6 +112,7 @@ public:
 	///////////////////////
 	// Basic AT Commands //
 	///////////////////////
+	bool showInfo(bool enable);
 	bool test();
 	bool reset();
 	String firmwareVersion();
@@ -166,6 +167,7 @@ public:
 	friend class ESP8266Server;
 
     bool _state[ESP8266_MAX_SOCK_NUM];
+	IPAddress _client[ESP8266_MAX_SOCK_NUM];
 	Stream* _serial;
 protected:
     

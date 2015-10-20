@@ -70,7 +70,25 @@ size_t ESP8266Client::write(uint8_t c)
 
 size_t ESP8266Client::write(const uint8_t *buf, size_t size)
 {
-	return wifi.tcpSend(_socket, buf, size);
+	IPAddress ip = wifi._client[_socket];
+	int temp = wifi.tcpSend(_socket, buf, size);
+	
+	if(temp>0) return temp;
+	else 
+	{
+		wifi.updateStatus();
+		for (int i = 0; i <ESP8266_MAX_SOCK_NUM; i++) 
+		{
+			if(ip==wifi._client[i])
+			{
+				_socket = i;
+				//Serial.println(_socket);
+				//Serial.println(wifi._client[_socket]);
+				return wifi.tcpSend(_socket, buf, size);
+			}
+		}
+		return 0;
+	}
 }
 
 int ESP8266Client::available()

@@ -68,6 +68,25 @@ ESP8266Client ESP8266Server::available()
 #ifdef DEBUG
 		DEBUG_OUTPUT.println(socket);
 #endif
+		IPAddress _currentIP;
+		int index1 = s.lastIndexOf(',');
+		int index2 = s.lastIndexOf(',',index1-1);
+		if(index1!=-1&&index2!=-1)
+		{
+			String temp = s.substring(index2+1,index1);
+			
+			byte pos1 = temp.indexOf('.');
+			_currentIP[0] = atoi(temp.substring(0,pos1).c_str());
+			byte pos2 = temp.indexOf('.',pos1+1);
+			_currentIP[1] = atoi(temp.substring(pos1+1,pos2).c_str());
+			byte pos3 = temp.indexOf('.',pos2+1);
+			_currentIP[2] = atoi(temp.substring(pos2+1,pos3).c_str());
+			_currentIP[3] = atoi(temp.substring(pos3+1).c_str());
+			wifi._client[socket]=_currentIP;
+#ifdef DEBUG
+		DEBUG_OUTPUT.println(wifi._client[socket]);
+#endif
+		}
 		return ESP8266Client(socket);
       }
 	}

@@ -24,7 +24,7 @@ Distributed as-is; no warranty is given.
 #include "util/ESP8266_AT.h"
 
 #define ESP8266_DISABLE_ECHO 0
-#define SERVER_TIMEOUT 10
+#define SERVER_TIMEOUT 5
 #define baudRate 9600
 
 char esp8266RxBuffer[ESP8266_RX_BUFFER_LEN];
@@ -75,6 +75,10 @@ bool ESP8266Class::begin(uint8_t rx_pin, uint8_t tx_pin)
 		//TODO: list to do if successfully talking to esp8266
 		if(!setMode(WIFI_STA))
 			return false;
+		
+		if(!showInfo(true))
+			return false;
+		
 		return true;
 	}
 	
@@ -84,6 +88,15 @@ bool ESP8266Class::begin(uint8_t rx_pin, uint8_t tx_pin)
 ///////////////////////
 // Basic AT Commands //
 ///////////////////////
+bool ESP8266Class::showInfo(bool enable)
+{
+	sendCommand(ESP8266_SHOW_INFO, ESP8266_CMD_SETUP, (enable==true) ? "1" : "0"); // Send AT
+
+	if (readForResponse(RESPONSE_OK, COMMAND_RESPONSE_TIMEOUT) > 0)
+		return true;
+	
+	return false;
+}
 
 bool ESP8266Class::test()
 {
@@ -459,6 +472,7 @@ int8_t ESP8266Class::updateStatus()
 	// +CIPSTATUS:1,"TCP","192.168.0.101",54724,1\r\n\r\nOK\r\n 
 	
 	String s = wifi.readString();
+	//Serial.println(s);//add debug line
 	if(strstr(s.c_str(),RESPONSE_OK)==NULL) return ESP8266_RSP_FAIL;
 	
 	char * p = strstr(s.c_str(),"STATUS:");
@@ -470,12 +484,41 @@ int8_t ESP8266Class::updateStatus()
 	for (int i=0; i<ESP8266_MAX_SOCK_NUM; i++)
 	{
 		char params[15] = {0};
+		char *p;
 		sprintf(params, "+CIPSTATUS:%d", i);
-		if(strstr(s.c_str(),params)) 
+		if(p=strstr(s.c_str(),params))
+		{
 			_state[i] = TAKEN; 
+			p+=20;		
+			IPAddress currentIP;
+			for (uint8_t j = 0; j < 4; j++)
+			{
+				char tempOctet[4];
+				memset(tempOctet, 0, 4); // Clear tempOctet
+				
+				size_t octetLength = strspn(p, "0123456789"); // Find length of numerical string:
+				if (octetLength >= 4) // If it's too big, return an error
+				{
+					_client[i]={255, 255, 255, 255};
+					return 1;
+				}	
+
+				strncpy(tempOctet, p, octetLength); // Copy string to temp char array:
+				currentIP[j] = atoi(tempOctet); // Move the temp char into IP Address octet
+				
+				p += (octetLength + 1); // Increment p to next octet
+			}
+			_client[i] = currentIP;
+		}			
+
 		else
+		{
 			_state[i] = AVAILABLE;
+			_client[i] = {0, 0, 0, 0};
+		}
+
 	}
+
 	return 1;	
 }
 
@@ -533,9 +576,10 @@ int16_t ESP8266Class::tcpSend(uint8_t linkID, const uint8_t *buf, size_t buf_siz
 	if (buf_size > 2048)
 		return ESP8266_CMD_BAD;
 	
-	int i = 5;int16_t rsp;
-	while(i--)
-	{
+	//int i = 5;
+	int16_t rsp;
+	//while(i--)
+	//{
 	char params[8];
 	sprintf(params, "%d,%d", linkID, buf_size);
 	sendCommand(ESP8266_TCP_SEND, ESP8266_CMD_SETUP, params);
@@ -551,7 +595,7 @@ int16_t ESP8266Class::tcpSend(uint8_t linkID, const uint8_t *buf, size_t buf_siz
 			return buf_size;
 		
 	}
-	}
+	//}
 	return rsp;
 }
 

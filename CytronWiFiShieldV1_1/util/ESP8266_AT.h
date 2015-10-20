@@ -39,6 +39,7 @@ const char ESP8266_VERSION[] PROGMEM= "+GMR"; // View version info
 //!const char ESP8266_SLEEP[] = "+GSLP"; // Enter deep-sleep mode
 const char ESP8266_ECHO_ENABLE[] PROGMEM= "E1"; // AT commands echo
 const char ESP8266_ECHO_DISABLE[] PROGMEM= "E0"; // AT commands echo
+const char ESP8266_SHOW_INFO[] PROGMEM= "+CIPDINFO";
 //!const char ESP8266_RESTORE[] = "+RESTORE"; // Factory reset
 //!const char ESP8266_UART[] = "+UART"; // UART configuration
 
