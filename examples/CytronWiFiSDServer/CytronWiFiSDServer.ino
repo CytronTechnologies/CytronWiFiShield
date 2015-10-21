@@ -1,9 +1,12 @@
 /*
  * This example creates a server that loads webpage 
- * from the files stored in microSDCard
+ * from the files stored in microSDCard and controls
+ * GPIO0, GPIO1 and GPIO2.
  * 
- * ioControl.htm file can be referred 
- * https://github.com/CytronTechnologies/ESP8266-WiFi-Module
+ * GPIO2 is connected to ESP12 onboard LED.
+ * 
+ * ioControl.htm file can be referred from "extras" folder
+ * https://github.com/CytronTechnologies/CytronWiFiShield
  */
 
 #include <CytronWiFiShield.h>
@@ -27,7 +30,8 @@ void setup() {
   while (!Serial) {
     ; // wait for serial port to connect. Needed for Leonardo only
   }
-
+  pinMode(2, OUTPUT);
+  digitalWrite(2, HIGH); //LED on esp12 module is active low
   if (!sd.begin(4)) {
     sd.initErrorHalt();
   }
