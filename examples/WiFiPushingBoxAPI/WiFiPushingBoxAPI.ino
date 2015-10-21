@@ -7,6 +7,7 @@
  */
 
 #include <CytronWiFiShield.h>
+#include <CytronWiFiClient.h>
 #include <SoftwareSerial.h>
 #define WiFi wifi
 
@@ -26,7 +27,7 @@ void setup() {
   Serial.print("Connecting to ");
   Serial.println(ssid);
   
-  if (!WiFi.begin()) {
+  if (!WiFi.begin(2, 3)) {
     Serial.println("WiFi shield not present");
     while (true);       // don't continue
   }
@@ -108,7 +109,7 @@ void upload(String data)
   Serial.println("Connecting");
   while(true)
   {
-    if(client.connect(host.c_str(), httpPort))
+    if(client.connect(host, httpPort))
     {
       if(!client.print(data)) continue;
 	  //5 sec to wait for reply from the server

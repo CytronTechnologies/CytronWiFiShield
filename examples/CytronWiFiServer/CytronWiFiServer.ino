@@ -1,8 +1,9 @@
 #include <CytronWiFiShield.h>
+#include <CytronWiFiServer.h>
 #include <SoftwareSerial.h>
 
-const char *ssid = "Cytron-Asus";
-const char *pass = "f5f4f3f2f1";
+#define ssid "..."
+#define pass "..."
 IPAddress ip(192, 168, 1 ,242);
 ESP8266Server server(80);
 
@@ -15,13 +16,12 @@ const char htmlHeader[] = "HTTP/1.1 200 OK\r\n"
 void setup() {
   
   // put your setup code here, to run once:
-  Serial.begin(115200);
+  Serial.begin(9600);
   while (!Serial) {
     ; // wait for serial port to connect. Needed for Leonardo only
   }
-  if(!wifi.begin())
+  if(!wifi.begin(2, 3))
     Serial.println(F("Error talking to shield"));
-  wifi.reset();
   Serial.println(wifi.firmwareVersion());
   Serial.print(F("Mode: "));Serial.println(wifi.getMode());// 1- station mode, 2- softap mode, 3- both
   Serial.println(F("Setup wifi config"));
@@ -29,14 +29,13 @@ void setup() {
   Serial.println(F("Start wifi connection"));
   if(!wifi.connectAP(ssid, pass))
     Serial.println(F("Error connecting to WiFi")); 
-  Serial.print(F("Connected to "));Serial.println(wifi.SSID());
-  Serial.println(F("IP address: "));
-  Serial.println(wifi.localIP());
-  wifi.updateStatus();
-  Serial.println(wifi.status()); //2- wifi connected with ip, 3- got connection with servers or clients, 4- disconnect with clients or servers, 5- no wifi
-  clientTest();
-  espblink(100);
+  Serial.print(F("Connected to: "));Serial.print(wifi.SSID());
+  Serial.print(F(", "));Serial.println(wifi.RSSI());
+  Serial.print(F("IP address: "));Serial.println(wifi.localIP());
+  Serial.print(F("Status: "));Serial.println(wifi.status()); //2- wifi connected with ip, 3- got connection with servers or clients, 4- disconnect with clients or servers, 5- no wifi
   server.begin();
+  espblink(100);
+
 }
 
 void loop() {
@@ -55,32 +54,24 @@ void espblink(int time)
 
 void serverTest()
 {
-  ESP8266Client client = server.available();
-  
-  if(client.available()>0)
+  if(server.hasClient())
   {
-    String s,t="";
-    s = client.readStringUntil('\r'); 
-//    wifi.find("\r\n\r\n");
-//    while(client.available()>0)
-//      t += (char)client.read();
-//    
-//    Serial.println(s);Serial.println(t);
-//    
-    if(strstr(s.c_str(),"GET / HTTP/1.1"))
+    Serial.println(server.uri());
+    
+    if(server.uri().equals("/"))
     {
       IPAddress ip = wifi.localIP();
       String ipStr = String(ip[0]) + '.' + String(ip[1]) + '.' + String(ip[2]) + '.' + String(ip[3]);
-      client.print(htmlHeader);
+      server.print(htmlHeader);
       String htmlBody = "Hello from ESP8266 at ";
       htmlBody += ipStr;
       htmlBody += "</html>\r\n\r\n";
-      client.print(htmlBody);
+      server.print(htmlBody);
     }
     
-    else if(strstr(s.c_str(),"GET /analog HTTP/1.1"))
+    else if(server.uri().equals("/analog"))
     {
-      client.print(htmlHeader);
+      server.print(htmlHeader);
       String htmlBody="";
       for (int a = 0; a < 6; a++)
       {
@@ -91,37 +82,60 @@ void serverTest()
         htmlBody += "<br>\r\n";
       }
       htmlBody += "\r\n</html>\r\n";
-      client.print(htmlBody);
+      server.print(htmlBody);
     }
     
-    else if(strstr(s.c_str(),"GET /gpio2 HTTP/1.1"))
+    else if(server.uri().equals("/gpio2"))
     {
       wifi.digitalWrite(2, wifi.digitalRead(2)^1);
-      client.print(htmlHeader);
+      server.print(htmlHeader);
       String htmlBody="GPIO2 is now ";
       htmlBody += wifi.digitalRead(2)==HIGH?"HIGH":"LOW";
       htmlBody += "</html>\r\n";
-      client.print(htmlBody);
+      server.print(htmlBody);
     }
     
-    else if(strstr(s.c_str(),"GET /info HTTP/1.1"))
+    else if(server.uri().equals("/info"))
     {
       String toSend = wifi.firmwareVersion();
       toSend.replace("\r\n","<br>");
-      client.print(htmlHeader);
-      client.print(toSend);
-      client.print("</html>\r\n");
+      server.print(htmlHeader);
+      server.print(toSend);
+      server.print("</html>\r\n");
+    }
+    
+    else if(server.uri().equals("/chat"))
+    {
+      server.setTimeout(180);// set 3 min for reply before disconnecting client
+      unsigned long timeIn = millis();
+      while(Serial.available()<=0&&timeIn+175000>millis());
+      //server will return what you have sent in serial monitor
+      //max characters 64
+      server.print(htmlHeader);
+      if(Serial.available()>0) server.write(Serial);
+      server.print("</html>\r\n");
+      server.setTimeout(10);
+    }
+
+    else if(server.uri().equals("/connect"))
+    {
+      server.setTimeout(180);
+      server.print(htmlHeader);
+      delay(100);
+      if(!clientTest())
+        server.print("Connection failed\r\n");
+      server.print("</html>\r\n");
+      server.setTimeout(10);
     }
 
     else
-      client.print("HTTP/1.1 404 Not Found\r\n\r\n");
+      server.print("HTTP/1.1 404 Not Found\r\n\r\n");
     
-    client.stop();
-    client.flush();
+    server.closeClient();
   }
 }
 
-void clientTest()
+bool clientTest()
 {
   const char destServer[] = "www.adafruit.com";
   ESP8266Client client;
@@ -129,9 +143,9 @@ void clientTest()
   {
     Serial.println(F("Failed to connect to server."));
     client.stop();
-    return;
+    return false;
   }
-  
+  wifi.updateStatus();
   const char *httpRequest = "GET /testwifi/index.html HTTP/1.1\r\n"
                            "Host: www.adafruit.com\r\n"
                            "Connection: close\r\n\r\n";
@@ -139,27 +153,30 @@ void clientTest()
   {
     Serial.println(F("Sending failed"));
     client.stop();
-    return;;
+    return false;
   }
 
   // set timeout approximately 5s for server reply
-  int i=5;
+  int i=3;
   while (client.available()<=0&&i--)
   {
     delay(1000);
     if(i==1) {
       Serial.println(F("Timeout"));
-      return;
+      client.stop();
+      return false;
       }
   }
-
-  while (client.available()>0)
-  {
-    //char c = (char)client.read();
-    //Serial.print(c);
-    Serial.write(client.read());
-  }
+  String s;
+  wifi.find("Content-Length: ");
+  int toRead = client.readStringUntil('\r').toInt();
+  wifi.find("\r\n\r\n");
+  while (client.available()>0&&toRead--)
+    s+=(char)client.read();
+    
+  server.print(s);
   
   client.stop();
+  return true;
 }
 

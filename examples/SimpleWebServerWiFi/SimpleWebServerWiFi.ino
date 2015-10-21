@@ -21,6 +21,7 @@
  */
  
 #include <CytronWiFiShield.h>
+#include <CytronWiFiServer.h>
 #include <SoftwareSerial.h>
 #define WiFi wifi
 
@@ -36,7 +37,7 @@ void setup() {
   pinMode(13, OUTPUT);      // set the LED pin mode
 
   // check for the presence of the shield:
-  if (!WiFi.begin()) {
+  if (!WiFi.begin(2, 3)) {
     Serial.println("WiFi shield not present");
     while (true);       // don't continue
   }
