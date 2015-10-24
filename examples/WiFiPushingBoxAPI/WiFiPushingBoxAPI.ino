@@ -113,10 +113,10 @@ void upload(String data)
     {
       if(!client.print(data)) continue;
 	  //5 sec to wait for reply from the server
-      int i=5;
+      int i=5000;
       while (client.available()<=0&&i--)
       {
-        delay(1000);
+        delay(1);
         if(i==1) {
           Serial.println(F("Timeout"));
           return;
