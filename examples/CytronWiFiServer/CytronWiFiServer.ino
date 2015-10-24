@@ -156,25 +156,26 @@ bool clientTest()
     return false;
   }
 
-  // set timeout approximately 5s for server reply
-  int i=3;
+  // set timeout approximately 3s for server reply
+  int i=3000;
   while (client.available()<=0&&i--)
   {
-    delay(1000);
+    delay(1);
     if(i==1) {
       Serial.println(F("Timeout"));
       client.stop();
       return false;
       }
   }
-  String s;
-  wifi.find("Content-Length: ");
-  int toRead = client.readStringUntil('\r').toInt();
-  wifi.find("\r\n\r\n");
-  while (client.available()>0&&toRead--)
-    s+=(char)client.read();
-    
-  server.print(s);
+  String s, line;
+  while (client.available()>0)
+  {
+    s=client.readStringUntil('\n');
+    if(s.indexOf('\r')==-1) 
+      line+=s;
+  }
+  
+  server.print(line);
   
   client.stop();
   return true;

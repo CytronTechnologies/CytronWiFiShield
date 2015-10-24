@@ -158,10 +158,10 @@ void clientTest()
   }
 
   // set timeout approximately 5s for server reply
-  int i=5;
+  int i=5000;
   while (client.available()<=0&&i--)
   {
-    delay(1000);
+    delay(1);
     if(i==1) {
       Serial.println(F("Timeout"));
       return;
