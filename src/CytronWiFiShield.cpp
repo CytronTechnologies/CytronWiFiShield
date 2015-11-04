@@ -43,19 +43,19 @@ ESP8266Class::ESP8266Class()
 
 bool ESP8266Class::begin(uint8_t rx_pin, uint8_t tx_pin)
 {
-	if ((rx_pin==2||rx_pin==8||rx_pin==10||rx_pin==12)&&(tx_pin==3||tx_pin==9||tx_pin==11||tx_pin==13))
+	if (rx_pin==0&&tx_pin==1)
+	{
+		Serial.begin(baudRate);
+		_serial = &Serial;
+		isHardwareSerial = true;
+	}
+	
+	else if ((rx_pin==1||rx_pin==2||rx_pin==8||rx_pin==10||rx_pin==12)&&(tx_pin==0||tx_pin==3||tx_pin==9||tx_pin==11||tx_pin==13))
 	{
 		SoftwareSerial *swSerial = new SoftwareSerial(rx_pin, tx_pin);
 		swSerial->begin(baudRate);
 		_serial = swSerial;
 		isHardwareSerial = false;
-	}
-	
-	else if (rx_pin==0&&tx_pin==1)
-	{
-		Serial.begin(baudRate);
-		_serial = &Serial;
-		isHardwareSerial = true;
 	}
 	
 	else
@@ -112,8 +112,9 @@ bool ESP8266Class::reset()
 {
 	sendCommand(ESP8266_RESET); // Send AT+RST
 	
-	if (!_serial->find("ready\r\n"))
-	//if (readForResponse(RESPONSE_READY, COMMAND_RESET_TIMEOUT) <= 0)
+	//if (!_serial->find("ready\r\n"))
+	int resp = readForResponses("ready\r\n", "invalid\r\n", COMMAND_RESET_TIMEOUT);
+	if (!(resp > 0 || resp == -3))
 		return false;
 	
 	if (!echo(false))
