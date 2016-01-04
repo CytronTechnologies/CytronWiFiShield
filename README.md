@@ -1,2 +1,2 @@
-# CytronWiFiShield
-CytronWiFiShield with ESP8266 chip
+# Cytron ESPWiFi Shield AT Library
+Cytron ESPWiFi Shield AT Library
