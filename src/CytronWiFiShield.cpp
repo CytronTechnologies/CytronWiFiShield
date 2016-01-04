@@ -112,8 +112,13 @@ bool ESP8266Class::reset()
 {
 	sendCommand(ESP8266_RESET); // Send AT+RST
 	
-	//if (!_serial->find("ready\r\n"))
+	if (readForResponse(RESPONSE_OK, COMMAND_RESPONSE_TIMEOUT) > 0)
+		clearBuffer();
+	
+	_serial->find("\r\n\r\n");
+	
 	int resp = readForResponses("ready\r\n", "invalid\r\n", COMMAND_RESET_TIMEOUT);
+	
 	if (!(resp > 0 || resp == -3))
 		return false;
 	
