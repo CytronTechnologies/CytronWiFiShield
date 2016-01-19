@@ -412,6 +412,17 @@ bool ESP8266Class::config(IPAddress ip, IPAddress gateway, IPAddress subnet)
 	
 }
 
+bool ESP8266Class::softAP(const char * ssid, const char * pwd, uint8_t channel_id, uint8_t enc)
+{
+	char params[50] = {0};
+	if(strlen(pwd)<8 || strlen(pwd) > 64) return false;
+	sprintf(params, "\"%s\",\"%s\",%i,%i", ssid, pwd, channel_id, enc);
+	sendCommand(ESP8266_AP_CONFIG, ESP8266_CMD_SETUP, (const char*)params);
+	
+	return (readForResponse(RESPONSE_OK, COMMAND_RESPONSE_TIMEOUT) > 0 ? true : false);
+	
+}
+
 IPAddress ESP8266Class::softAPIP()
 {
 	sendCommand(ESP8266_SET_AP_IP, ESP8266_CMD_QUERY);
