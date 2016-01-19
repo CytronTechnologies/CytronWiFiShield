@@ -61,6 +61,11 @@ Distributed as-is; no warranty is given.
 #define ESP8266_RSP_TIMEOUT -1
 #define ESP8266_RSP_SUCCESS 0
 
+#define OPEN 0
+#define WPA_PSK	2
+#define WPA2_PSK 3
+#define WPA_WPA2_PSK 4
+
 typedef enum esp8266_wifi_mode {
 	WIFI_STA = 1,
 	WIFI_AP = 2,
@@ -126,6 +131,7 @@ public:
 	bool connectAP(const char * ssid);
 	bool connectAP(const char * ssid, const char * pwd);
 	bool disconnectAP();
+	bool softAP(const char * ssid, const char * pwd, uint8_t channel_id = 1, uint8_t enc = 4);
 	String SSID();
 	int RSSI();
 	IPAddress localIP();
