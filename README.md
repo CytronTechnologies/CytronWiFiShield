@@ -9,9 +9,9 @@ Please go through User's Manual to understand how to get started with Cytron ESP
 
 <strong>How to install:</strong><br/>
 <ul>
-<li>Easy install:</br>
+<li><strong>Easy install:</strong></br>
 </li>
-<li>Manual install:</br>
+<li><strong>Manual install:</strong></br>
 Download the library as .zip file and extract it to Arduino libraries directory.
 </li>
 </ul>
