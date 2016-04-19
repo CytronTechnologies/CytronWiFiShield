@@ -30,28 +30,28 @@ void setup() {
   while (!Serial) {
     ; // wait for serial port to connect. Needed for Leonardo only
   }
-  pinMode(2, OUTPUT);
-  digitalWrite(2, HIGH); //LED on esp12 module is active low
-  if (!sd.begin(4)) {
+  
+  if (!sd.begin(4, SPI_HALF_SPEED)) {
     sd.initErrorHalt();
   }
   if(!wifi.begin(2, 3))
   {
-    Serial.println("Error talking to shield");
+    Serial.println(F("Error talking to shield"));
     while(1);
   }
   Serial.println(wifi.firmwareVersion());
   wifi.config(ip);
-  Serial.print("Status: ");Serial.println(wifi.status());
-  Serial.println("Start wifi connection");
+  Serial.print(F("Status: "));Serial.println(wifi.status());
+  Serial.println(F("Start wifi connection"));
   if(!wifi.connectAP(ssid, pass))
   {
-    Serial.println("Error connecting to WiFi");
+    Serial.println(F("Error connecting to WiFi"));
     while(true);
   }
-  Serial.print("Connected to ");Serial.print(wifi.SSID());
-  Serial.print(", ");Serial.println(wifi.RSSI());
-  Serial.print("IP address: ");Serial.println(wifi.localIP());
+  Serial.print(F("Connected to "));Serial.print(wifi.SSID());
+  Serial.print(F(", "));Serial.println(wifi.RSSI());
+  Serial.print(F("IP address: "));Serial.println(wifi.localIP());
+  
   server.begin();
 }
 
@@ -64,8 +64,9 @@ void serverTest()
 {
   if(server.hasClient())
   {
-    Serial.println(server.uri());
-    Serial.println(server.method());
+    Serial.println(F("Client Connected!"));
+
+    Serial.print("Request: ");Serial.println(server.uri());
     for(int i = 0; i< server.args();i++)
     {
       Serial.print(server.argName(i));
@@ -73,6 +74,8 @@ void serverTest()
       Serial.println(server.arg(i));
     }
     
+    if(server.uri().equals("/favicon.ico")) return;
+
     if(server.uri().equals("/gpio")&&server.method()==HTTP_GET)
     {
       if(server.arg(0).equals("ON")) 
@@ -81,13 +84,16 @@ void serverTest()
         wifi.digitalWrite(server.argName(0).toInt(),HIGH);  
     }
 
+    Serial.println(F("Sending HTML page"));
     SdFile file;
     if (!file.open("ioControl.htm", O_READ))
       return; 
     server.print(htmlHeader); 
     server.write(file);
     file.close();
-
-    server.closeClient();    
+  
+    delay(1);
+    server.closeClient(); 
+    Serial.println(F("Client disconnected"));   
   }
 }

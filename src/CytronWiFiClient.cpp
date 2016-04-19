@@ -26,6 +26,7 @@ Distributed as-is; no warranty is given.
 ESP8266Client::ESP8266Client()
 {
 	ESP8266Client(ESP8266_SOCK_NOT_AVAIL);
+	//_socket = ESP8266_SOCK_NOT_AVAIL;
 }
 
 ESP8266Client::ESP8266Client(uint8_t sock)
@@ -38,6 +39,16 @@ uint8_t ESP8266Client::status()
 	return wifi.status();
 }
 
+int ESP8266Client::connect(IPAddress ip, uint16_t port)
+{
+	return connect(ip, port, 0);
+}
+
+int ESP8266Client::connect(const char *host, uint16_t port)
+{
+	return connect(host, port, 0);
+}
+
 bool ESP8266Client::connect(String host, uint16_t port, uint32_t keepAlive)
 {
 	return connect(host.c_str(), port, keepAlive);
@@ -47,18 +58,43 @@ bool ESP8266Client::connect(IPAddress ip, uint16_t port, uint32_t keepAlive)
 {
 	char ipAddress[16];
 	sprintf(ipAddress, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
-	
-	return connect((const char *)ipAddress, port, keepAlive);
+
+	return connect(ipAddress, port, keepAlive);
 }
 	
 bool ESP8266Client::connect(const char* host, uint16_t port, uint32_t keepAlive) 
 {
 	_socket = getSocket();
 	//Serial.println(_socket);
-    if (_socket != ESP8266_SOCK_NOT_AVAIL)
-    {
+    	if (_socket != ESP8266_SOCK_NOT_AVAIL)
+    	{
 		wifi._state[_socket] = TAKEN;
 		return wifi.tcpConnect(_socket, host, port, keepAlive);
+	}
+	return 0;
+}
+
+bool ESP8266Client::secure_connect(String host, uint16_t port, uint32_t keepAlive)
+{
+	return secure_connect(host.c_str(), port, keepAlive);
+}
+	
+bool ESP8266Client::secure_connect(IPAddress ip, uint16_t port, uint32_t keepAlive) 
+{
+	char ipAddress[16];
+	sprintf(ipAddress, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+	
+	return secure_connect(ipAddress, port, keepAlive);
+}
+	
+bool ESP8266Client::secure_connect(const char* host, uint16_t port, uint32_t keepAlive) 
+{
+	_socket = getSocket();
+	//Serial.println(_socket);
+	if (_socket != ESP8266_SOCK_NOT_AVAIL)
+	{
+		wifi._state[_socket] = TAKEN;
+		return wifi.sslConnect(_socket, host, port, keepAlive);
 	}
 	return false;
 }
@@ -70,9 +106,10 @@ size_t ESP8266Client::write(uint8_t c)
 
 size_t ESP8266Client::write(const uint8_t *buf, size_t size)
 {
+	
 	IPAddress ip = wifi._client[_socket];
 	int temp = wifi.tcpSend(_socket, buf, size);
-	
+
 	if(temp>0) return temp;
 	else 
 	{
@@ -116,6 +153,19 @@ int ESP8266Client::read()
 	return wifi.read();
 }
 
+int ESP8266Client::read(uint8_t *buf, size_t size)
+{
+	if (wifi.available() < size)
+		return 0;
+	
+	for (int i=0; i<size; i++)
+	{
+		buf[i] = wifi.read();
+	}
+	
+	return 1;
+}
+/*
 int ESP8266Client::readBytes(char *buf, size_t size)
 {
 	return wifi.readBytes(buf,size);
@@ -135,7 +185,7 @@ String ESP8266Client::readStringUntil(char c)
 {
 	return wifi.readStringUntil(c);
 }
-
+*/
 int ESP8266Client::peek()
 {
 	return wifi.peek();
@@ -145,7 +195,17 @@ void ESP8266Client::flush()
 {
 	wifi.flush();
 }
+/*
+bool ESP8266Client::find(char *target)
+{
+	return wifi.find(target);
+}
 
+bool ESP8266Client::find(uint8_t *target)
+{
+	return wifi.find(target);
+}
+*/
 void ESP8266Client::stop()
 {
 	if(_socket < ESP8266_MAX_SOCK_NUM)
@@ -154,8 +214,8 @@ void ESP8266Client::stop()
 		wifi._state[_socket] = AVAILABLE;
 	}
 }
-
-bool ESP8266Client::connected()
+//bool ESP8266Client::connected()
+uint8_t ESP8266Client::connected()
 {
 	// If data is available, assume we're connected. Otherwise,
 	// we'll try to send the status query, and will probably end 

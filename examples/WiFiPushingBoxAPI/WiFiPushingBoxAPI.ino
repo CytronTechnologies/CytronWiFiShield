@@ -1,8 +1,11 @@
 /*
  *  This sketch sends data to Google Form via pushingbox API service.
+ *  Pushingbox API provide services to allow us to send GET or POST HTTPS request to Google Form 
+ *  without connecting to Google server directly.
  *
  *  You need to get devid from pushingbox. You can refer to tutorial
  *	http://www.instructables.com/id/Post-to-Google-Docs-with-Arduino/
+ *  to create Google Form and pushingbox services.
  *
  */
 

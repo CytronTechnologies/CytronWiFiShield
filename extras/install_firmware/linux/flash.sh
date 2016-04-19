@@ -1,0 +1,1 @@
+sudo ./esptool.py -p $1 -b 230400 write_flash 0x00000 boot_v1.2.bin 0x01000 user1.1024.new.2.bin 0x7e000 blank.bin 0x81000 user2.1024.new.2.bin 0x3fc000 esp_init_data_default.bin 0x3fe000 blank.bin -fs 32m -fm dio -ff 40m

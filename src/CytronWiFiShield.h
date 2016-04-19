@@ -26,8 +26,6 @@ Distributed as-is; no warranty is given.
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 #include <IPAddress.h>
-//#include "CytronWiFiClient.h"
-//#include "CytronWiFiServer.h"
 
 ///////////////////////////////
 // Command Response Timeouts //
@@ -71,41 +69,6 @@ typedef enum esp8266_wifi_mode {
 	WIFI_AP = 2,
 	WIFI_BOTH = 3
 };
-//TODO:
-/*
-typedef enum esp8266_encryption {
-	ESP8266_ECN_OPEN,
-	ESP8266_ECN_WPA_PSK,
-	ESP8266_ECN_WPA2_PSK,
-	ESP8266_ECN_WPA_WPA2_PSK
-};
-
-typedef enum esp8266_connection_type {
-	ESP8266_TCP,
-	ESP8266_UDP,
-	ESP8266_TYPE_UNDEFINED
-};
-
-typedef enum esp8266_tetype {
-	ESP8266_CLIENT,
-	ESP8266_SERVER
-};
-
-struct esp8266_ipstatus
-{
-	uint8_t linkID;
-	esp8266_connection_type type;
-	IPAddress remoteIP;
-	uint16_t port;
-	esp8266_tetype tetype;
-};
-
-struct esp8266_status
-{
-	esp8266_connect_status stat;
-	//esp8266_ipstatus ipstatus[ESP8266_MAX_SOCK_NUM];
-};
-*/
 
 class ESP8266Class : public Stream
 {
@@ -113,10 +76,11 @@ public:
 	
 	ESP8266Class();
 	bool begin(uint8_t rx_pin=2, uint8_t tx_pin=3);
-	
+	bool begin(HardwareSerial &hSerial);
 	///////////////////////
 	// Basic AT Commands //
 	///////////////////////
+	bool setAutoConn(bool enable);
 	bool showInfo(bool enable);
 	bool test();
 	bool reset();
@@ -143,7 +107,9 @@ public:
 	/////////////////////
 	// TCP/IP Commands //
 	/////////////////////
+	bool setSslBufferSize(size_t size);
 	bool tcpConnect(uint8_t linkID, const char * destination, uint16_t port, uint16_t keepAlive=0);
+	bool sslConnect(uint8_t linkID, const char * destination, uint16_t port, uint16_t keepAlive=0);
 	int16_t tcpSend(uint8_t linkID, const uint8_t *buf, size_t buf_size);
 	bool close(uint8_t linkID);
 	//int16_t setTransferMode(uint8_t mode);
@@ -168,17 +134,21 @@ public:
 	int read();
 	int peek();
 	void flush();
+	//bool find(char *);
+	//bool find(uint8_t *);
 	
 	friend class ESP8266Client;
 	friend class ESP8266Server;
 
     bool _state[ESP8266_MAX_SOCK_NUM];
 	IPAddress _client[ESP8266_MAX_SOCK_NUM];
-	Stream* _serial;
+	
 protected:
-    
+    Stream* _serial;
 	
 private:
+	bool init();
+	
 	//////////////////////////
 	// Command Send/Receive //
 	//////////////////////////

@@ -24,8 +24,9 @@ Distributed as-is; no warranty is given.
 #define _CYTRONWIFICLIENT_H_
 
 #include "util/ESP8266_AT.h"
+#include "Client.h"
 
-class ESP8266Client : public Print
+class ESP8266Client : public Client
 {
 public:
 	ESP8266Client();
@@ -33,21 +34,31 @@ public:
 
 	uint8_t status();
 	
-	bool connect(IPAddress ip, uint16_t port, uint32_t keepAlive=0);
-	bool connect(String host, uint16_t port, uint32_t keepAlive = 0);
-	bool connect(const char *host, uint16_t port, uint32_t keepAlive=0);
+	virtual int connect(IPAddress ip, uint16_t port);
+	virtual int connect(const char *host, uint16_t port);
 	
-	int available();
-	int read();
-	int readBytes(char *buf, size_t size);
-	int readBytes(uint8_t *buf, size_t size);
-	String readString();
-	String readStringUntil(char);
-	int peek();
-	void flush();
-	void stop();
-	bool connected();
-	operator bool();
+	bool connect(IPAddress ip, uint16_t port, uint32_t keepAlive);
+	bool connect(String host, uint16_t port, uint32_t keepAlive = 0);
+	bool connect(const char *host, uint16_t port, uint32_t keepAlive);
+	
+	bool secure_connect(IPAddress ip, uint16_t port, uint32_t keepAlive=0);
+	bool secure_connect(String host, uint16_t port, uint32_t keepAlive = 0);
+	bool secure_connect(const char *host, uint16_t port, uint32_t keepAlive=0);
+	
+	virtual int available();
+	virtual int read();
+	virtual int read(uint8_t *buf, size_t size);
+	//int readBytes(char *buf, size_t size);
+	//int readBytes(uint8_t *buf, size_t size);
+	//String readString();
+	//String readStringUntil(char);
+	virtual int peek();
+	virtual void flush();
+	virtual void stop();
+	virtual uint8_t connected();
+	//bool find(char*);
+	//bool find(uint8_t*);
+	virtual operator bool();
 
 	friend class ESP8266Class;
 	
@@ -55,6 +66,7 @@ public:
 	virtual size_t write(const uint8_t *buf, size_t size);
 	
 	uint8_t  _socket;
+	using Print::write;
 	
 template<typename T> 
 inline size_t write(T &src)
@@ -64,8 +76,15 @@ inline size_t write(T &src)
 	while (src.available() > 2048)
 	{
 		int i = 2048;
-		char params[8];
-		sprintf(params, "%d,%d", _socket, i);
+		char params[8] = {0};
+		params[0] = _socket + '0';
+		params[1] = ',';
+		params[2] = '2';
+		params[3] = '0';
+		params[4] = '4';
+		params[5] = '8';
+		
+		//sprintf(params, "%d,%d", _socket, i);
 		sendCommand(ESP8266_TCP_SEND, 1, params);
 
 		int16_t rsp = readForResponses(RESPONSE_OK, RESPONSE_ERROR, 5000);
@@ -81,8 +100,9 @@ inline size_t write(T &src)
 	}
 	
 	uint16_t leftLen = src.available();
-	char params[8];
+	char params[8] = {0};
 	sprintf(params, "%d,%d", _socket, leftLen);
+
 	sendCommand(ESP8266_TCP_SEND, 1, params);
 	int16_t rsp = readForResponses(RESPONSE_OK, RESPONSE_ERROR, 5000);
 	if (rsp > 0)
