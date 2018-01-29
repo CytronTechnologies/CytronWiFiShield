@@ -29,8 +29,9 @@ void setup() {
   }
   Serial.println(wifi.firmwareVersion());
   Serial.print(F("Mode: "));Serial.println(wifi.getMode());// 1- station mode, 2- softap mode, 3- both
-  Serial.println(F("Setup wifi config"));
-  wifi.config(ip);
+  // Uncomment these 2 lines if you are using static IP Address
+  // Serial.println(F("Setup wifi config"));
+  // wifi.config(ip);
   Serial.println(F("Start wifi connection"));
   if(!wifi.connectAP(ssid, pass))
   {
