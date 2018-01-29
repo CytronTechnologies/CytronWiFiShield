@@ -140,11 +140,12 @@ public:
 	friend class ESP8266Client;
 	friend class ESP8266Server;
 
-    bool _state[ESP8266_MAX_SOCK_NUM];
+    	bool _state[ESP8266_MAX_SOCK_NUM];
 	IPAddress _client[ESP8266_MAX_SOCK_NUM];
 	
 protected:
-    Stream* _serial;
+    	Stream* _serial;
+	SoftwareSerial* swSerial;
 	
 private:
 	bool init();
