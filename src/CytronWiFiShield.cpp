@@ -899,6 +899,10 @@ void ESP8266Class::sendCommand(const char * cmd, uint8_t type, const char * para
 	//if(_serial->available()>0) _serial->readString();
 	
 	//_serial->print((const __FlashStringHelper*)ESP8266_AT);
+	if(!isHardwareSerial) {
+		swSerial->listen();
+	}
+	
 	_serial->write(0x41);_serial->write(0x54);
 	_serial->print((const __FlashStringHelper*)cmd);
 	if (type == ESP8266_CMD_QUERY)
