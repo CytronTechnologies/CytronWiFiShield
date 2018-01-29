@@ -63,7 +63,7 @@ bool ESP8266Class::begin(uint8_t rx_pin, uint8_t tx_pin)
 	
 	else
 	{
-		SoftwareSerial *swSerial = new SoftwareSerial(rx_pin, tx_pin);
+		swSerial = new SoftwareSerial(rx_pin, tx_pin);
 		swSerial->begin(baudRate);
 		_serial = swSerial;
 		isHardwareSerial = false;
