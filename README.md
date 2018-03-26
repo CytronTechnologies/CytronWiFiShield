@@ -10,8 +10,10 @@ The User's Manual can be referred [here](https://docs.google.com/document/d/1LFC
 
 ## Installing
  - **Easy install**
-  - Open Arduino IDE. Go to Sketch -> Include Library -> Manage Libraries. Search for **Cytron ESPWiFi Shield** and install.
+ 
+   Open Arduino IDE. Go to Sketch -> Include Library -> Manage Libraries. Search for **Cytron ESPWiFi Shield** and install.
  - **Manual install:**
-  - Download the library as .zip file and extract it to Arduino libraries directory.
+ 
+   Download the library as .zip file and extract it to Arduino libraries directory.
 
 If you have any inquiry, please post in our <a href="http://forum.cytron.com.my/" target="_blank">technical forum</a>.
