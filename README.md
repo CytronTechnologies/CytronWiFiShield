@@ -15,5 +15,11 @@ The User's Manual can be referred [here](https://docs.google.com/document/d/1LFC
 - **Manual install:**
  
   Download the library as .zip file and extract it to Arduino libraries directory.
+  
+## Related tutorials
+1. [ESPresso Lite v2 with AT Firmware](https://tutorial.cytron.io/2017/02/14/espresso-lite-v2-with-at-firmware/)
+2. [EasyMP3 shield with WiFly Remote](https://tutorial.cytron.io/2016/12/01/easymp3-shield-with-wifly-remote/)
 
-If you have any inquiry, please post in our <a href="http://forum.cytron.com.my/" target="_blank">technical forum</a>.
+## Contribution
+1. Having an issue? or looking for support? [Open an issue](https://github.com/CytronTechnologies/CytronWiFiShield/issues) or post in our [technical forum](http://forum.cytron.com.my/).
+2. Got a new feature or a bug fix? Fork the repo, make your changes, and submit a pull request.
