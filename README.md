@@ -1,6 +1,6 @@
 # Cytron_ESPWiFi_Shield_Library
 
-**Arduino AT Library and example code for Cytron ESPWiFi shield**
+Arduino AT Library and example code for Cytron ESPWiFi shield
 
 Maintained by: Ng Beng Chet ([bengchet@cytron.io](mailto:bengchet@cytron.io))
 
