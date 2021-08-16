@@ -74,7 +74,7 @@ void setup() {
       Serial.println(F("headers received"));
 
     String line = client.readStringUntil('\n');
-    if (line.startsWith("{\"state\":\"success\""))
+    if (line.startsWith("{\"state\":\"success\"") || line.startsWith("{\"state\":\"pending\""))
       Serial.println(F("esp8266/Arduino CI successfull!"));  
     else 
       Serial.println(F("esp8266/Arduino CI has failed"));

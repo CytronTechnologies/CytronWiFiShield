@@ -5,7 +5,6 @@
 
 const char *ssid = "...";
 const char *pass = "...";
-IPAddress ip(192, 168, 1 ,242);
 ESP8266Server server(80);
 
 const char htmlHeader[] = "HTTP/1.1 200 OK\r\n"
@@ -44,22 +43,12 @@ void setup() {
   wifi.updateStatus();
   Serial.println(wifi.status()); //2- wifi connected with ip, 3- got connection with servers or clients, 4- disconnect with clients or servers, 5- no wifi
   clientTest();
-  espblink(100);
   server.begin();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   serverTest();
-}
-
-void espblink(int time)
-{
-  for(int i = 0;i<12;i++)
-  {
-    wifi.digitalWrite(2,wifi.digitalRead(2)^1);
-    delay(time);
-  }
 }
 
 void serverTest()
@@ -110,16 +99,6 @@ void serverTest()
       client.print(htmlBody);
     }
     
-    else if(req.equals("/gpio2"))
-    {
-      wifi.digitalWrite(2, wifi.digitalRead(2)^1);
-      client.print(htmlHeader);
-      String htmlBody="GPIO2 is now ";
-      htmlBody += wifi.digitalRead(2)==HIGH?"HIGH":"LOW";
-      htmlBody += "</html>\r\n";
-      client.print(htmlBody);
-    }
-    
     else if(req.equals("/info"))
     {
       String toSend = wifi.firmwareVersion();
@@ -139,7 +118,7 @@ void serverTest()
 
 void clientTest()
 {
-  const char destServer[] = "www.adafruit.com";
+  const char destServer[] = "wifitest.adafruit.com";
   ESP8266Client client;
   if (!client.connect(destServer, 80))
   {
@@ -149,7 +128,7 @@ void clientTest()
   }
   
   const char *httpRequest = "GET /testwifi/index.html HTTP/1.1\r\n"
-                           "Host: www.adafruit.com\r\n"
+                           "Host: wifitest.adafruit.com\r\n"
                            "Connection: close\r\n\r\n";
   if(!client.print(httpRequest))
   {
@@ -178,4 +157,3 @@ void clientTest()
   
   client.stop();
 }
-

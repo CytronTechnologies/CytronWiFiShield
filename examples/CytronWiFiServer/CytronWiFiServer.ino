@@ -137,7 +137,7 @@ void serverTest()
 
 bool clientTest()
 {
-  const char destServer[] = "www.adafruit.com";
+  const char destServer[] = "wifitest.adafruit.com";
   ESP8266Client client;
   if (!client.connect(destServer, 80))
   {
@@ -147,7 +147,7 @@ bool clientTest()
   }
   wifi.updateStatus();
   const char *httpRequest = "GET /testwifi/index.html HTTP/1.1\r\n"
-                           "Host: www.adafruit.com\r\n"
+                           "Host: wifitest.adafruit.com\r\n"
                            "Connection: close\r\n\r\n";
   if(!client.print(httpRequest))
   {
@@ -180,4 +180,3 @@ bool clientTest()
   client.stop();
   return true;
 }
-
