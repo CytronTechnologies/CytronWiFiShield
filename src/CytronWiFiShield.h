@@ -107,7 +107,7 @@ public:
 	/////////////////////
 	// TCP/IP Commands //
 	/////////////////////
-	bool setSslBufferSize(size_t size);
+	//bool setSslBufferSize(size_t size);
 	bool tcpConnect(uint8_t linkID, const char * destination, uint16_t port, uint16_t keepAlive=0);
 	bool sslConnect(uint8_t linkID, const char * destination, uint16_t port, uint16_t keepAlive=0);
 	int16_t tcpSend(uint8_t linkID, const uint8_t *buf, size_t buf_size);
@@ -118,13 +118,6 @@ public:
 	bool setServerTimeout(uint16_t time);
 	//int16_t ping(IPAddress ip);
 	//int16_t ping(char * server);
-		
-	//////////////////////////
-	// Custom GPIO Commands //
-	//////////////////////////
-	//int16_t pinMode(uint8_t pin, uint8_t mode);
-	bool digitalWrite(uint8_t pin, uint8_t state);
-	int8_t digitalRead(uint8_t pin);
 	
 	///////////////////////////////////
 	// Virtual Functions from Stream //

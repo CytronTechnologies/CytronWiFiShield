@@ -23,7 +23,6 @@ Distributed as-is; no warranty is given.
 #include "CytronWiFiShield.h"
 #include "util/ESP8266_AT.h"
 
-#define ESP8266_DISABLE_ECHO 0
 #define SERVER_TIMEOUT 5
 #define baudRate 9600
 
@@ -74,12 +73,37 @@ bool ESP8266Class::begin(uint8_t rx_pin, uint8_t tx_pin)
 
 bool ESP8266Class::init()
 {
-	if (reset()&&test())
+	// Change the wifi shield baudrate if we do not receive any respond.
+	// Assume that by default it's 115200.
+	if (!test())
 	{
-#ifdef ESP8266_DISABLE_ECHO
+		if (isHardwareSerial) {
+			((HardwareSerial*)_serial)->end();
+			((HardwareSerial*)_serial)->begin(115200);
+		}
+		else {
+			((SoftwareSerial*)_serial)->end();
+			((SoftwareSerial*)_serial)->begin(115200);
+		}
+		
+		sendCommand(ESP8266_UART_SETTINGS, ESP8266_CMD_SETUP, "9600,8,1,0,0");
+		readForResponse(RESPONSE_OK, COMMAND_RESPONSE_TIMEOUT);
+		
+		if (isHardwareSerial) {
+			((HardwareSerial*)_serial)->end();
+			((HardwareSerial*)_serial)->begin(baudRate);
+		}
+		else {
+			((SoftwareSerial*)_serial)->end();
+			((SoftwareSerial*)_serial)->begin(baudRate);
+		}
+	}
+	
+	if (reset())
+	{
 		if (!echo(false))
 			return false;
-#endif
+		
 		if (!setMux(true))
 			return false;
 		
@@ -139,12 +163,11 @@ bool ESP8266Class::reset()
 	if (readForResponse(RESPONSE_OK, COMMAND_RESPONSE_TIMEOUT) > 0)
 		clearBuffer();
 	
-	int resp = readForResponses("ready", "invalid", COMMAND_RESET_TIMEOUT);	
+	int resp = readForResponses("ready\r\n", "invalid", COMMAND_RESET_TIMEOUT);	
 
 	if (!(resp > 0 || resp == -3))
 		return false;
-	if (!echo(false))
-		return false;
+	
 	return true;
 }
 
@@ -192,8 +215,8 @@ String ESP8266Class::firmwareVersion()
 	// Look for "OK":
 
 	String version = "";
-	unsigned int timeout = COMMAND_RESPONSE_TIMEOUT;
-	while (timeout--) // While we haven't timed out
+	unsigned long timestamp = millis();
+	while (millis() - timestamp < COMMAND_RESPONSE_TIMEOUT) // While we haven't timed out
 	{
 		if (_serial->available()) // If data is available on UART RX
 		{
@@ -206,7 +229,6 @@ String ESP8266Class::firmwareVersion()
 				return version;
 			}	// Return how number of chars read				
 		}
-		delay(1);
 	}
 	return "";
 }
@@ -377,14 +399,21 @@ bool ESP8266Class::disconnectAP()
 //    - Fail: 0
 IPAddress ESP8266Class::localIP()
 {
-	sendCommand(ESP8266_SET_STA_IP, ESP8266_CMD_QUERY); //Send AT+CIFSTA?
+	sendCommand(ESP8266_SET_STA_IP, ESP8266_CMD_QUERY); //Send AT+CIPSTA?
 	// Example Response: +CIPSTA:ip,"192.168.0.114"\r\n
 	//                   +CIPSTA:gateway,"192.168.1.1"\r\n
 	//					 +CIPSTA:subnet,"255.255.255.0"\r\n
 	//                   \r\n
 	//                   OK\r\n
 	// Look for the OK:
-	int16_t rsp = readForResponse(RESPONSE_OK, COMMAND_RESPONSE_TIMEOUT);
+	int16_t rsp = readForResponses(RESPONSE_OK, RESPONSE_ERROR, COMMAND_RESPONSE_TIMEOUT);
+	
+	// For backward compatibility with NONOS-AT Firmware.
+	if (rsp <= 0) {
+		sendCommand(ESP8266_SET_STA_IP_NONOS, ESP8266_CMD_QUERY); //Send AT+CIPSTA?
+		rsp = readForResponses(RESPONSE_OK, RESPONSE_ERROR, COMMAND_RESPONSE_TIMEOUT);
+	}
+	
 	if (rsp > 0)
 	{
 		// Look for "ip" in the esp8266RxBuffer
@@ -459,7 +488,16 @@ IPAddress ESP8266Class::softAPIP()
 	//                   \r\n
 	//                   OK\r\n
 	// Look for the OK:
-	int16_t rsp = readForResponse(RESPONSE_OK, COMMAND_RESPONSE_TIMEOUT);
+	int16_t rsp = readForResponses(RESPONSE_OK, RESPONSE_ERROR, COMMAND_RESPONSE_TIMEOUT);
+	
+	// For backward compatibility with NONOS-AT Firmware.
+	if (rsp <= 0) {
+		sendCommand(ESP8266_SET_AP_IP_NONOS, ESP8266_CMD_QUERY);
+		rsp = readForResponses(RESPONSE_OK, RESPONSE_ERROR, COMMAND_RESPONSE_TIMEOUT);
+	}
+	
+	
+	
 	if (rsp > 0)
 	{
 		// Look for "ip" in the esp8266RxBuffer
@@ -578,53 +616,55 @@ bool ESP8266Class::tcpConnect(uint8_t linkID, const char * destination, uint16_t
 	int i = 10;
 	while(i--)
 	{
-	//_serial->print((const __FlashStringHelper*)ESP8266_AT);
-	_serial->write(0x41);_serial->write(0x54);
-	_serial->print((const __FlashStringHelper*)ESP8266_TCP_CONNECT);
-	//_serial->print(F("="));
-	_serial->write(0x3d);
-	_serial->print(linkID);
-	//_serial->print(F(",\"TCP\",\""));
-	_serial->write(0x2c);_serial->write(0x22);_serial->write(0x54);_serial->write(0x43);_serial->write(0x50);_serial->write(0x22);_serial->write(0x2c);_serial->write(0x22);
-	_serial->print(destination);
-	//_serial->print(F("\","));
-	_serial->write(0x22);_serial->write(0x2c);
-	_serial->print(port);
-	if (keepAlive > 0)
-	{
-		//_serial->print(",");
-		_serial->write(0x2c);
-		// keepAlive is in units of 500 milliseconds.
-		// Max is 7200 * 500 = 3600000 ms = 60 minutes.
-		_serial->print(keepAlive / 500);
-	}
-	//_serial->print(F("\r\n"));
-	_serial->write(0x0d);
-	_serial->write(0x0a);
-	
-	// Example good: CONNECT\r\n\r\nOK\r\n
-	// Example bad: DNS Fail\r\n\r\nERROR\r\n
-	// Example meh: ALREADY CONNECTED\r\n\r\nERROR\r\n
-	int16_t rsp = readForResponses(RESPONSE_OK, RESPONSE_ERROR, CLIENT_CONNECT_TIMEOUT);
-	
-	if (rsp <= 0)
-	{
-		// We may see "ERROR", but be "ALREADY CONNECTED".
-		// Search for "ALREADY", and return success if we see it.
-		char * p = searchBuffer("ALREADY");
-		if (p != NULL)
+		//_serial->print((const __FlashStringHelper*)ESP8266_AT);
+		_serial->write(0x41);_serial->write(0x54);
+		_serial->print((const __FlashStringHelper*)ESP8266_TCP_CONNECT);
+		//_serial->print(F("="));
+		_serial->write(0x3d);
+		_serial->print(linkID);
+		//_serial->print(F(",\"TCP\",\""));
+		_serial->write(0x2c);_serial->write(0x22);_serial->write(0x54);_serial->write(0x43);_serial->write(0x50);_serial->write(0x22);_serial->write(0x2c);_serial->write(0x22);
+		_serial->print(destination);
+		//_serial->print(F("\","));
+		_serial->write(0x22);_serial->write(0x2c);
+		_serial->print(port);
+		if (keepAlive > 0)
+		{
+			//_serial->print(",");
+			_serial->write(0x2c);
+			// keepAlive is in units of 500 milliseconds.
+			// Max is 7200 * 500 = 3600000 ms = 60 minutes.
+			_serial->print(keepAlive / 500);
+		}
+		//_serial->print(F("\r\n"));
+		_serial->write(0x0d);
+		_serial->write(0x0a);
+		
+		// Example good: CONNECT\r\n\r\nOK\r\n
+		// Example bad: DNS Fail\r\n\r\nERROR\r\n
+		// Example meh: ALREADY CONNECTED\r\n\r\nERROR\r\n
+		int16_t rsp = readForResponses(RESPONSE_OK, RESPONSE_ERROR, CLIENT_CONNECT_TIMEOUT);
+		
+		if (rsp <= 0)
+		{
+			// We may see "ERROR", but be "ALREADY CONNECTED".
+			// Search for "ALREADY", and return success if we see it.
+			char * p = searchBuffer("ALREADY");
+			if (p != NULL)
+				return true;
+			// Otherwise the connection failed. Continue the trials or return false:
+		}
+		// Return true on successful (new) connection
+		else 
 			return true;
-		// Otherwise the connection failed. Continue the trials or return false:
-	}
-	// Return true on successful (new) connection
-	else 
-		return true;
-	delay(1);
+		delay(1);
 	}
 	return false;
 }
 
-bool ESP8266Class::setSslBufferSize(size_t size)
+// This is incompatible with ESP-AT firmware.
+// Since the NONOS-AT firmware is having problem with SSL, do not consider the compability with NONOS-AT firmware.
+/*bool ESP8266Class::setSslBufferSize(size_t size)
 {
 	if(size < 2048 || size > 4096) return false;	
 	char modeChar[5] = {0};
@@ -633,58 +673,59 @@ bool ESP8266Class::setSslBufferSize(size_t size)
 	sendCommand(ESP8266_SSL_SIZE, ESP8266_CMD_SETUP, (const char*)modeChar);
 
 	return (readForResponse(RESPONSE_OK, COMMAND_RESPONSE_TIMEOUT)> 0 ? true : false );
-}
+}*/
 
 bool ESP8266Class::sslConnect(uint8_t linkID, const char * destination, uint16_t port, uint16_t keepAlive)
 {
-	
-	if(!setSslBufferSize(4096)) return false;
+	// This is incompatible with ESP-AT firmware.
+	// Since the NONOS-AT firmware is having problem with SSL, do not consider the compability with NONOS-AT firmware.
+	//if(!setSslBufferSize(4096)) return false;
 	
 	int i = 10;
 	while(i--)
 	{
-	//_serial->print((const __FlashStringHelper*)ESP8266_AT);
-	_serial->write(0x41);_serial->write(0x54);
-	_serial->print((const __FlashStringHelper*)ESP8266_TCP_CONNECT);
-	//_serial->print(F("="));
-	_serial->write(0x3d);
-	_serial->print(linkID);
-	//_serial->print(F(",\"TCP\",\""));
-	_serial->write(0x2c);_serial->write(0x22);_serial->write(0x53);_serial->write(0x53);_serial->write(0x4c);_serial->write(0x22);_serial->write(0x2c);_serial->write(0x22);
-	_serial->print(destination);
-	//_serial->print(F("\","));
-	_serial->write(0x22);_serial->write(0x2c);
-	_serial->print(port);
-	if (keepAlive > 0)
-	{
-		//_serial->print(",");
-		_serial->write(0x2c);
-		// keepAlive is in units of 500 milliseconds.
-		// Max is 7200 * 500 = 3600000 ms = 60 minutes.
-		_serial->print(keepAlive / 500);
-	}
-	//_serial->print(F("\r\n"));
-	_serial->write(0x0d);
-	_serial->write(0x0a);
-	
-	// Example good: CONNECT\r\n\r\nOK\r\n
-	// Example bad: DNS Fail\r\n\r\nERROR\r\n
-	// Example meh: ALREADY CONNECTED\r\n\r\nERROR\r\n
-	int16_t rsp = readForResponses(RESPONSE_OK, RESPONSE_ERROR, CLIENT_CONNECT_TIMEOUT);
-	
-	if (rsp <= 0)
-	{
-		// We may see "ERROR", but be "ALREADY CONNECTED".
-		// Search for "ALREADY", and return success if we see it.
-		char * p = searchBuffer("ALREADY");
-		if (p != NULL)
+		//_serial->print((const __FlashStringHelper*)ESP8266_AT);
+		_serial->write(0x41);_serial->write(0x54);
+		_serial->print((const __FlashStringHelper*)ESP8266_TCP_CONNECT);
+		//_serial->print(F("="));
+		_serial->write(0x3d);
+		_serial->print(linkID);
+		//_serial->print(F(",\"TCP\",\""));
+		_serial->write(0x2c);_serial->write(0x22);_serial->write(0x53);_serial->write(0x53);_serial->write(0x4c);_serial->write(0x22);_serial->write(0x2c);_serial->write(0x22);
+		_serial->print(destination);
+		//_serial->print(F("\","));
+		_serial->write(0x22);_serial->write(0x2c);
+		_serial->print(port);
+		if (keepAlive > 0)
+		{
+			//_serial->print(",");
+			_serial->write(0x2c);
+			// keepAlive is in units of 500 milliseconds.
+			// Max is 7200 * 500 = 3600000 ms = 60 minutes.
+			_serial->print(keepAlive / 500);
+		}
+		//_serial->print(F("\r\n"));
+		_serial->write(0x0d);
+		_serial->write(0x0a);
+		
+		// Example good: CONNECT\r\n\r\nOK\r\n
+		// Example bad: DNS Fail\r\n\r\nERROR\r\n
+		// Example meh: ALREADY CONNECTED\r\n\r\nERROR\r\n
+		int16_t rsp = readForResponses(RESPONSE_OK, RESPONSE_ERROR, CLIENT_CONNECT_TIMEOUT);
+		
+		if (rsp <= 0)
+		{
+			// We may see "ERROR", but be "ALREADY CONNECTED".
+			// Search for "ALREADY", and return success if we see it.
+			char * p = searchBuffer("ALREADY");
+			if (p != NULL)
+				return true;
+			// Otherwise the connection failed. Continue the trials or return false:
+		}
+		// Return true on successful (new) connection
+		else 
 			return true;
-		// Otherwise the connection failed. Continue the trials or return false:
-	}
-	// Return true on successful (new) connection
-	else 
-		return true;
-	delay(1);
+		delay(1);
 	}
 	return false;
 }
@@ -818,37 +859,6 @@ int16_t ESP8266Class::ping(char * server)
 	return rsp;
 }
 */
-//////////////////////////
-// Custom GPIO Commands //
-//////////////////////////
-
-bool ESP8266Class::digitalWrite(uint8_t pin, uint8_t state)
-{
-	if(pin > 16) return false;
-	char params[5] = {0}; 
-	sprintf(params, "%d,%d", pin, state>0? 1:0);
-	sendCommand(ESP8266_PINWRITE, ESP8266_CMD_SETUP, params);
-	return (readForResponses(RESPONSE_OK, RESPONSE_ERROR, COMMAND_RESPONSE_TIMEOUT)>0? true: false);
-}
-
-int8_t ESP8266Class::digitalRead(uint8_t pin)
-{
-	if(pin > 16) return -1;
-	char params[5] = {0}; 
-	sprintf(params, "%d", pin);
-	sendCommand(ESP8266_PINREAD, ESP8266_CMD_SETUP, params);
-	// Example response: 0:LOW\r\n\r\nOK\r\n
-	
-	if (readForResponses(RESPONSE_OK, RESPONSE_ERROR, COMMAND_RESPONSE_TIMEOUT) > 0)
-	{
-		if (strstr(esp8266RxBuffer, "LOW") != NULL)
-			return LOW;
-		else if (strstr(esp8266RxBuffer, "HIGH") != NULL)
-			return HIGH;
-	}
-	
-	return -1;
-}
 
 //////////////////////////////
 // Stream Virtual Functions //
@@ -876,7 +886,9 @@ int ESP8266Class::peek()
 
 void ESP8266Class::flush()
 {
-	_serial->readString();
+	// The flush function has changed to flush the outgoing bytes instead.
+	// We should do nothing here.
+	//_serial->readString();
 }
 
 /*bool ESP8266Class::find(char *target)
@@ -925,7 +937,8 @@ int16_t ESP8266Class::readForResponse(const char * rsp, unsigned int timeout)
 	
 	clearBuffer();
 	
-	while (timeout--) // While we haven't timed out
+	unsigned long timestamp = millis();
+	while (millis() - timestamp < (unsigned long)timeout) // While we haven't timed out
 	{
 		if (_serial->available()) // If data is available on UART RX
 		{
@@ -935,7 +948,6 @@ int16_t ESP8266Class::readForResponse(const char * rsp, unsigned int timeout)
 				return received;	// Return how number of chars read
 				
 		}
-		delay(1);
 	}
 	
 	if (received > 0) // If we received any characters
@@ -950,7 +962,8 @@ int16_t ESP8266Class::readForResponses(const char * pass, const char * fail, uns
 	
 	clearBuffer();
 	
-	while (timeout--) // While we haven't timed out
+	unsigned long timestamp = millis();
+	while (millis() - timestamp < (unsigned long)timeout) // While we haven't timed out
 	{
 		if (_serial->available()) // If data is available on UART RX
 		{
@@ -963,7 +976,6 @@ int16_t ESP8266Class::readForResponses(const char * pass, const char * fail, uns
 				return ESP8266_RSP_FAIL;// return error
 				
 		}
-		delay(1);
 	}
 	
 	if (received > 0) // If we received any characters

@@ -40,6 +40,7 @@ const char ESP8266_VERSION[] PROGMEM= "+GMR"; // View version info
 const char ESP8266_ECHO_ENABLE[] PROGMEM= "E1"; // AT commands echo
 const char ESP8266_ECHO_DISABLE[] PROGMEM= "E0"; // AT commands echo
 const char ESP8266_SHOW_INFO[] PROGMEM= "+CIPDINFO";
+const char ESP8266_UART_SETTINGS[] PROGMEM= "+UART_DEF";
 //!const char ESP8266_RESTORE[] = "+RESTORE"; // Factory reset
 //!const char ESP8266_UART[] = "+UART"; // UART configuration
 
@@ -56,8 +57,10 @@ const char ESP8266_AP_CONFIG[] PROGMEM= "+CWSAP"; // Set softAP configuration
 const char ESP8266_AUTO_CONNECT[] PROGMEM= "+CWAUTOCONN"; // Connect to AP automatically
 //!const char ESP8266_SET_STA_MAC[] = "+CIPSTAMAC"; // Set MAC address of station
 //!const char ESP8266_SET_AP_MAC[] = "+CIPAPMAC"; // Set MAC address of softAP
-const char ESP8266_SET_STA_IP[] PROGMEM= "+CIPSTA_CUR"; // Set IP address of ESP8266 station
-const char ESP8266_SET_AP_IP[] PROGMEM= "+CIPAP_CUR"; // Set IP address of ESP8266 softAP
+const char ESP8266_SET_STA_IP[] PROGMEM= "+CIPSTA"; // Set IP address of ESP8266 station
+const char ESP8266_SET_STA_IP_NONOS[] PROGMEM= "+CIPSTA_CUR"; // Set IP address of ESP8266 station
+const char ESP8266_SET_AP_IP[] PROGMEM= "+CIPAP"; // Set IP address of ESP8266 softAP
+const char ESP8266_SET_AP_IP_NONOS[] PROGMEM= "+CIPAP_CUR"; // Set IP address of ESP8266 softAP
 
 /////////////////////
 // TCP/IP Commands //
@@ -74,10 +77,5 @@ const char ESP8266_SERVER_CONFIG[] PROGMEM= "+CIPSERVER"; // Configure as server
 const char ESP8266_SET_SERVER_TIMEOUT[] PROGMEM= "+CIPSTO"; // Set timeout when ESP8266 runs as TCP server
 //!const char ESP8266_PING[] = "+PING"; // Function PING
 
-//////////////////////////
-// Custom GPIO Commands //
-//////////////////////////
-const char ESP8266_PINWRITE[] PROGMEM= "+CIOWRITE"; // Write GPIO (high/low)
-const char ESP8266_PINREAD[] PROGMEM= "+CIOREAD"; // Read GPIO digital value
 
 #endif
